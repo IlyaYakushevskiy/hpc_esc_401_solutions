@@ -1,0 +1,23 @@
+#!/bin/bash -l
+#SBATCH --job-name=cpi-scaling-loop
+#SBATCH --time=00:10:00
+#SBATCH --nodes=1
+#SBATCH --partition=debug
+#SBATCH --constraint=mc
+#SBATCH --account=uzh8
+
+#SBATCH --cpus-per-task=128
+
+#SBATCH --output=results/cpi_scaling_loop.log
+
+THREAD_LIST="1 2 5 10 20 50 100 128"
+
+for nthreads in $THREAD_LIST; do
+    echo "--- Running with $nthreads threads ---"
+    
+    export OMP_NUM_THREADS=$nthreads
+    
+    srun -n 1 -c $nthreads --cpu-bind=none ./cpi_omp
+    
+done
+echo " test finished."

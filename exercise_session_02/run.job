@@ -4,13 +4,11 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-core=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=128
+#SBATCH --cpus-per-task=1
 #SBATCH --partition=debug
 #SBATCH --constraint=mc
 #SBATCH --account=uzh8
-#SBATCH --output=job_outputs/output.log
-#SBATCH --error=job_outputs/errors.log
-
+#SBATCH --output=job_outputs/omp_1_thread.log
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
-srun cpi_omp
+srun cpi_omp 
