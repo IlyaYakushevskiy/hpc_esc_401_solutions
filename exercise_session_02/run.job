@@ -1,14 +1,16 @@
 #!/bin/bash -l
-#SBATCH --job-name="my-job"
-#SBATCH --time=00:01:00
+#SBATCH --job-name="task2"
+#SBATCH --time=00:05:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-core=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=1
-#SBATCH --partition=SELECT_PARTITION
+#SBATCH --cpus-per-task=128
+#SBATCH --partition=debug
 #SBATCH --constraint=mc
-
+#SBATCH --account=uzh8
+#SBATCH --output=job_outputs/output.log
+#SBATCH --error=job_outputs/errors.log
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
-srun hostname
+srun cpi_omp
