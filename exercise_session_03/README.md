@@ -9,3 +9,20 @@ In this folder you can find:
 
 # My solutions 
 
+## Ex1 
+
+1) 2) created Makefile and separated GetTime() fct into .h file 
+
+3) done v
+
+4) outputed times are: 
+Computed in 1.508 seconds
+Computed in 1.51 seconds
+ 
+some very little time was taken to compute those lines 
+
+MPI_Finalize();
+tElapsed = getTime() - tStart;
+thus second time I a bit delayed. 
+
+## Ex2
