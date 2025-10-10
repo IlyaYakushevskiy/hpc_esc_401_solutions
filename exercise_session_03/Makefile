@@ -6,7 +6,7 @@ cpi: cpi.c gettime.c
 # 	cc -O3 -c gettime.c
 
 sum: sum.c gettime.c 
-	cc -O3 -o sum sum.c gettime.c
+	cc -O3 -fopenmp -o sum sum.c gettime.c -lm
 
 cpi_omp: cpi_omp.c
 	cc -O3 -o cpi_omp -fopenmp cpi_omp.c 

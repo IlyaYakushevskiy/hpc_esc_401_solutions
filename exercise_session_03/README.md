@@ -52,3 +52,19 @@ O2 Performs basic loop optimization
 Structures code to take advantage of -mcpu and -mtune settings O3 initiates more intense low-level transformations that remove many of the limitations present at -O2
 - one can make it faster with paralelisation 
 
+3) I inserted the line before the for loop as was shown in lecture. I had to write a new run.job script and modify makfile to use fopenmp and math library 
+on 128 cores it took 
+sum=10022429072.084940
+Time taken in sec: 0.08981
+
+cores : times per sec 
+5 0.6674
+30 0.3493
+64 0.1585
+90 0.1248
+110 0.09418
+120 0.09368
+128 0.08847
+
+4) I've reused simple python from last task  script to plot it. It is honestly a bit dissapointing. The reason I think is that the problem is rather memory limited and not compute limited, we need time to read and write stuff and we could make it somehow faster, we see speedup converges to const which is expected with Amdahls law. 
+
