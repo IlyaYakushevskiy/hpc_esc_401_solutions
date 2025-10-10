@@ -68,3 +68,8 @@ cores : times per sec
 
 4) I've reused simple python from last task  script to plot it. It is honestly a bit dissapointing. The reason I think is that the problem is rather memory limited and not compute limited, we need time to read and write stuff and we could make it somehow faster, we see speedup converges to const which is expected with Amdahls law. 
 
+## Ex3 
+
+Superlinear speedup is primarily caused by memory cache Superlinear speedup usually happens because of cache effects.
+When the work is split across many cores, each core gets a smaller chunk of data that can fit into its fast local cache.
+This avoids slow memory access and makes the program run even faster than expected from just parallelization alone.
