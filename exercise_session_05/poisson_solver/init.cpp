@@ -99,8 +99,6 @@ void init_f(params p, double **f){
     double hx = 1.0 / (p.nx + 1); 
     double hy = 1.0 / (p.ny + 1); 
 
-   
-    //#pragma omp parallel for collapse(2) 
     for (int i = 0; i <= p.nx + 1; ++i) {
         for (int j = 0; j <= p.ny + 1; ++j) {
             double x = i * hx;
