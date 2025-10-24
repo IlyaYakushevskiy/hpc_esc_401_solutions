@@ -14,22 +14,23 @@ int main (int argc, char *argv[]){
     double **f, **u_old, **u_new;
 
     // First allocate memory for each matrix
-    f = allocateGrid(p.nx, p.ny, f);
-    u_old = allocateGrid(p.nx, p.ny, u_old);
-    u_new = allocateGrid(p.nx, p.ny, u_new);
+    f = allocateGrid(p.nx + 2, p.ny + 2, f);
+    u_old = allocateGrid(p.nx + 2, p.ny + 2, u_old);
+    u_new = allocateGrid(p.nx + 2, p.ny + 2, u_new);
 
     // Initialize the value of matrices
     init_variables(p, f, u_old, u_new);
-
+    printf("initialization done.\n");
     // Output the source term of the Poisson equation in a csv file
     output_source(p, f);
 
     // Do a first jacobi step
     jacobi_step(p, u_new, u_old, f);
+    printf("step 1 done.\n");
 
     // Compute differences and norm
     double diff = norm_diff(p, u_new, u_old);
-
+    printf("Initial diff=%g\n", diff);
     // Initialize the Jacobi step conter
     int nstep=1;
 

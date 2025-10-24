@@ -11,8 +11,15 @@
  * @return     Returns \sqrt{\sum(mat1_{ij} - mat2_{ij})^2/(nx*ny)}
  */
 double norm_diff(params p, double** mat1, double** mat2){
-    printf("Function norm_diff (jacobi.cpp l.12): not implemented.\n");
-    return 0.; // replace 0 with the norm
+    double norm_sq_sum = 0.0; 
+
+    //#pragma omp parallel for collapse(2) reduction(+:norm_sq_sum) 
+    for (int i = 1; i <= p.nx; i++){ 
+        for (int j = 1; j <= p.ny; j++){ 
+            norm_sq_sum += (mat1[i][j] - mat2[i][j]) * (mat1[i][j] - mat2[i][j]);
+        }
+    }
+    return sqrt(norm_sq_sum / (double)(p.nx * p.ny)); 
 }
 
 /**
@@ -25,13 +32,22 @@ double norm_diff(params p, double** mat1, double** mat2){
  * @param      f      The source term
  */
 void jacobi_step(params p, double** u_new, double** u_old, double** f){
-    double dx = 1.0/(double(p.nx - 1));
-    double dy = 1.0/(double(p.ny - 1));
+    double dx = 1.0 / (p.nx + 1); 
+    double dy = 1.0 / (p.ny + 1); 
 
-    for (int i=0; i<p.nx; i++){
-        for (int j=0; j<p.ny; j++){
-            u_old[i][j] = u_new[i][j];
+    //#pragma omp parallel for collapse(2) 
+    for (int i = 0; i <= p.nx + 1; i++){
+        for (int j = 0; j <= p.ny + 1; j++){
+            u_old[i][j] = u_new[i][j]; 
         }
     }
-    printf("Function jacobi_step (jacobi.cpp l.26): not implemented.\n");
+
+    #pragma omp parallel for collapse(2) 
+    for (int i = 1; i <= p.nx; i++){ 
+        for (int j = 1; j <= p.ny; j++){ 
+            u_new[i][j] = 0.25 * (u_old[i+1][j] + u_old[i-1][j] + 
+                                  u_old[i][j+1] + u_old[i][j-1] - 
+                                  dx*dy*f[i][j]);
+        }
+    }
 }
