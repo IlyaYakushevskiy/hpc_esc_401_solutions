@@ -11,3 +11,5 @@
 ## Ex2  
 
 1) I copied the template from the Week 2 excercise and created sub-directory pi_mpi/ I modified code to use specifically leibniz method  
+
+## Ex3 
