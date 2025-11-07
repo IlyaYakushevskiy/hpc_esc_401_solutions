@@ -1,0 +1,12 @@
+#!/bin/bash -l
+#SBATCH --job-name="task5"
+#SBATCH --time=00:05:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-core=4
+#SBATCH --cpus-per-task=1
+#SBATCH --partition=debug
+#SBATCH --constraint=mc
+#SBATCH --account=uzh8
+#SBATCH --output=job_outputs/poisson_mpi.log
+
+srun ./main

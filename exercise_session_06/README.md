@@ -13,3 +13,7 @@
 1) I copied the template from the Week 2 excercise and created sub-directory pi_mpi/ I modified code to use specifically leibniz method  
 
 ## Ex3 
+
+1) implemented mpi_get_domain() using method 1 
+    
+Unfortunately I couln't resolve all the segmenation fault errors, please look into my exercise_session_06/poisson_MPI/job_outputs/poisson_mpi.log

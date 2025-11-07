@@ -26,9 +26,9 @@ int main(int argc, char *argv[]){
     double **f, **u_old, **u_new;
 
     // // First allocate memory for each matrix
-    f = allocateGrid(p.xmax - p.xmin, p.ymax - p.ymin, f);
-    u_old = allocateGrid(p.xmax - p.xmin, p.ymax - p.ymin, u_old);
-    u_new = allocateGrid(p.xmax - p.xmin, p.ymax - p.ymin, u_new);
+    f = allocateGrid(p.xmax - p.xmin + 1, p.ymax - p.ymin + 1, f);
+    u_old = allocateGrid(p.xmax - p.xmin + 1, p.ymax - p.ymin + 1, u_old);
+    u_new = allocateGrid(p.xmax - p.xmin + 1, p.ymax - p.ymin + 1, u_new);
     // Initialize the value of matrices
     init_variables(p, f, u_old, u_new);
 
@@ -40,18 +40,28 @@ int main(int argc, char *argv[]){
 
     // // Compute differences and norm
     double diff = norm_diff(p, u_new, u_old);
-
-    printf("I am total square differences: %g\n",diff);
+    double global_diff;
+    ALLREDUCE(&diff, &global_diff);
+    
 
     // // Initialize the Jacobi step conter
     int nstep=1;
 
     // // Main loop for the Jacobi iterations
-    while (diff>p.tol && nstep<p.nstep_max){
+    while (global_diff > p.tol && nstep < p.nstep_max){
+        
         jacobi_step(p, u_new, u_old, f,  my_rank, size);
+        
         diff = norm_diff(p, u_new, u_old);
+        ALLREDUCE(&diff, &global_diff); 
+        
         nstep++;
-        printf("Step %d, Diff=%g\n", nstep, diff);
+
+        // Only Rank 0 should print the progress
+        if (my_rank == 0) {
+            printf("Step %d, Diff=%g\n", nstep, global_diff); 
+        }
+
         if (nstep%p.foutput==0) output(p, nstep, u_new, my_rank);
     }
     // //final output
