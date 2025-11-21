@@ -8,6 +8,7 @@
 
 #ifdef _OPENACC
     // TODO: declare routine accordingly so as to be called from the GPU
+    #pragma acc routine
 #endif
 double blur(int pos, const double *u)
 {
@@ -31,7 +32,7 @@ void blur_twice_host(double *in , double *out , int n, int nsteps)
     for (auto istep = 0; istep < nsteps; ++istep) {
         #pragma omp parallel for
         for (auto i = 1; i < n-1; ++i) {
-            buffer[i] = blur(i, in);
+            buffer[i] = blur(i, in); //do we copy buffer on device? 
         }
 
         #pragma omp parallel for
@@ -51,11 +52,15 @@ void blur_twice_gpu_naive(double *in , double *out , int n, int nsteps)
 
     for (auto istep = 0; istep < nsteps; ++istep) {
         // TODO: offload this loop to the GPU
+
+        //load buffer
+        #pragma omp parallel loop 
         for (auto i = 1; i < n-1; ++i) {
             buffer[i] = blur(i, in);
         }
 
         // TODO: offload this loop to the GPU
+        #pragma omp parallel loop 
         for (auto i = 2; i < n-2; ++i) {
             out[i] = blur(i, buffer);
         }
@@ -70,24 +75,36 @@ void blur_twice_gpu_nocopies(double *in , double *out , int n, int nsteps)
 {
     double *buffer = malloc_host<double>(n);
 
-    // TODO: move the data needed by the algorithm to the GPU
+    double *current_in = in;
+    double *current_out = out;
+
+    #pragma acc data copy(current_in[0:n]) create(buffer[0:n], current_out[0:n])
     {
         for (auto istep = 0; istep < nsteps; ++istep) {
             // TODO: offload this loop to the GPU
+            #pragma acc parallel loop present(current_in[0:n], buffer[0:n])
             for (auto i = 1; i < n-1; ++i) {
-                buffer[i] = blur(i, in);
+                buffer[i] = blur(i, current_in);
             }
 
             // TODO: offload this loop to the GPU
+            #pragma acc parallel loop present(buffer[0:n], current_out[0:n])
             for (auto i = 2; i < n-2; ++i) {
-                out[i] = blur(i, buffer);
+                current_out[i] = blur(i, buffer);
             }
 
             // TODO: offload this loop to the GPU; can you try just the pointer assignment?
-            for (auto i = 0; i < n; ++i) {
-                in[i] = out[i];
-            }
+            // for (auto i = 0; i < n; ++i) {
+            //     in[i] = out[i];
+            // }
+            double *temp = current_in;
+            current_in = current_out;
+            current_out = temp;
+
+
+            
         }
+        #pragma acc update host(current_in[0:n])
     }
 
     free(buffer);
@@ -123,7 +140,8 @@ int main(int argc, char** argv) {
     auto time_host = get_time() - tstart_host;
 
     auto tstart = get_time();
-    blur_twice_gpu_naive(x0, x1, n, nsteps);
+    //blur_twice_gpu_naive(x0, x1, n, nsteps);
+    blur_twice_gpu_nocopies(x0, x1, n, nsteps); 
     auto time = get_time() - tstart;
 
     auto validate = true;

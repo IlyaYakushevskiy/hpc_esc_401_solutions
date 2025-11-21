@@ -31,3 +31,20 @@ axpy (openmp): 0.106962 s <- here we presumably can not use L1/l2/l3 anymore and
 axpy (openacc): 3.16553 s
 
 # Ex2 
+
+1) because of in[i] = out[i]; we copy data in/out of GPU every step, what we want is to copy array, compute blur, copy out 
+
+dispersion 1D test of length n = 1048580 : 8.00003MB
+==== success ====
+Host version took 0.165376 s (0.00165376 s/step)
+GPU version took 0.204623 s (0.00204623 s/step)
+
+2) 
+
+we fixed the problem pointed out in point 1 
+
+Host version took 0.0639543 s (0.000639543 s/step)
+GPU version took 0.0636279 s (0.000636279 s/step)
+
+
+# Ex3 
