@@ -1,0 +1,13 @@
+#!/bin/bash -l
+#SBATCH --job-name="task8"
+#SBATCH --time=00:01:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-core=1
+#SBATCH --cpus-per-task=1
+#SBATCH --partition=debug
+#SBATCH --constraint=gpu
+#SBATCH --account=uzh8
+#SBATCH --output=job_outputs/pi_acc_parallel.log
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+
+srun ./a.out 
