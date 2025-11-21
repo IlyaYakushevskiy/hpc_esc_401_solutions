@@ -48,3 +48,16 @@ GPU version took 0.0636279 s (0.000636279 s/step)
 
 
 # Ex3 
+
+1) the problem is that we dont reduce sum explicitly and some threads can access sum at the same time 
+
+2) 
+reduction(+:sum)
+
+3) 
+even though gpu was twice faster it's not a significant improvement, we would need to do more operations to excuse GPU usage 
+
+dot product OpenACC of length n = 4 : 3.05176e-05MB
+expected 42 got 42: success
+Host kernel took 6.4e-08 s
+GPU kernel took 3.2e-08 s
