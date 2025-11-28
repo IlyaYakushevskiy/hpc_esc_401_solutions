@@ -31,11 +31,11 @@ int main () {
 
   //TO DO : write kernel invocation here
   int numBlocks = (N + BLOCKSIZE - 1) / BLOCKSIZE;
-  kern_set_val<<<numBlocks, BLOCKSIZE>>>(gpu_ptr, value, N);
+  kern_set_val<<<numBlocks, BLOCKSIZE>>>(gpu_ptr, value, N); //init on device
   cudaDeviceSynchronize ();
 
   //TO DO : copy data to host
-  cudaMemcpy(ptr, gpu_ptr,  sizeof(float)*N, cudaMemcpyDeviceToHost ); 
+  cudaMemcpy(ptr, gpu_ptr,  sizeof(float)*N, cudaMemcpyDeviceToHost );  //cp to host
 
   cudaFree (gpu_ptr);
 
