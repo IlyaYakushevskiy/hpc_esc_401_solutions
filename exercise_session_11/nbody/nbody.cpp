@@ -1,5 +1,7 @@
 #include <random>
 #include <vector>
+#include <omp.h>
+#include <iostream>
 using std::vector;
 
 struct particles {
@@ -37,7 +39,7 @@ void ic(particles &plist, int n) {
 void forces(particles &plist) {
     int n = plist.x.size();
     
-   
+    #pragma omp parallel for schedule(static)
     for(int i = 0; i < n; ++i) {       
         
         
@@ -82,9 +84,16 @@ void forces(particles &plist) {
     }
 }
 int main(int argc, char *argv[]) {
-    int N=50'000;
+    int N=500000;
     particles plist;
+    double start_time = omp_get_wtime(); 
+
     ic(plist,N);
     forces(plist);
+    
+    double end_time = omp_get_wtime();
+
+    std::cout << "N = " << N << std::endl;
+    std::cout << "real zime pro thread = " << end_time - start_time << std::endl;
     return 0;
 }

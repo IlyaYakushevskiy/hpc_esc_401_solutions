@@ -60,3 +60,11 @@ user    0m1.534s
 sys     0m0.006s
 
 ## Ex5 
+
+Using 128 cores on eiger, for N = 50'000 : 
+
+Average around 3.47637 (more precise in /job_outputs)
+
+Since we increase n by 10 times, complexity will be increased 100 times thus I'd expect for it around 5 min to run 
+
+for N = 500000: 
