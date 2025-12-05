@@ -13,6 +13,8 @@ PASSED !!
 
 PASSED
 
+Bonus done ! 
+
 # Ex4 
 
 Convolution took  0.063055 sec. on GPU
