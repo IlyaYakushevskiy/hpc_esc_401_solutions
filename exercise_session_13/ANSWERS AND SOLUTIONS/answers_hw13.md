@@ -7,7 +7,9 @@ I've created image from snapshot "hadoop" and ssh-ed the VM succesfully. Accesse
 ### Ex2 
 
 
-1)hadoop splited data into 7 chunks, so it launched 7 parallel mapper instances to process them
+1) hadoop splited data into 7 chunks, so it launched 7 parallel mapper instances to process them
+
+
 2) Lines treated ? Map input records=35371
 
 
