@@ -8,11 +8,15 @@ I've created image from snapshot "hadoop" and ssh-ed the VM succesfully. Accesse
 
 
 1)hadoop splited data into 7 chunks, so it launched 7 parallel mapper instances to process them
-2) 
+2) Lines treated ? Map input records=35371
+
+
+3) we can find outputs in http://localhost:9870/explorer.html#/user/ubuntu/output
 
 
 
-Output : 
+
+Output: 
 ```python
 2025-12-19 12:21:06,152 INFO mapreduce.Job: Counters: 55
         File System Counters
