@@ -1,0 +1,13 @@
+#!/bin/bash -l
+#SBATCH --job-name="task5"
+#SBATCH --time=00:05:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-core=7
+#SBATCH --cpus-per-task=1
+#SBATCH --partition=debug
+#SBATCH --constraint=mc
+#SBATCH --account=uzh8
+#SBATCH --output=job_outputs/ring_waitall.log
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+
+srun -n 7 ./a.out

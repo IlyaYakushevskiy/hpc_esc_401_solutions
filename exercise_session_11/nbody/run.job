@@ -1,0 +1,13 @@
+#!/bin/bash -l
+#SBATCH --job-name="task2"
+#SBATCH --time=00:10:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-core=128
+#SBATCH --cpus-per-task=1
+#SBATCH --partition=debug
+#SBATCH --constraint=mc
+#SBATCH --account=uzh8
+#SBATCH --output=job_outputs/1_cpu_nbody_omp_500k.log
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+
+srun ./nbody
