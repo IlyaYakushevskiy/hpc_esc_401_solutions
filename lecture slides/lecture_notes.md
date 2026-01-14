@@ -18,7 +18,7 @@ commit, push.
 - Importance of compiler optimization and 
 how can affect the results.
     - makes star
-    - lecture 3; 20 time impovement from using gcc -O3 -ffast-math -mavx2 -o cpi cpi.c  over gcc -o cpi cpi.c
+    - lecture 3; 20 time impovement from using gcc -O3 -ffast-math -mavx2 -o cpi cpi.c  over gcc -o cpi cpi.c (it breaks IEEE 754 compliance for speed) 
 
 
 - Basics of “make” (lecture 3)
@@ -58,8 +58,10 @@ versus FIFO. How you request resources
 - Moore’s Law and how it relates to the 
 Top500 list ( lecture 7)
 - Strong and weak scaling (lecture)
-    - strong scaling : goal is to decrease the runtime of problem of the same time 
+    - strong scaling (Amdahls Law): goal is to decrease the runtime of problem of the same time 
     Speedup(N)= T_serial / T_parallel(N)  SpeedUp ->inf 
+    ![alt text](<img/Screenshot 2026-01-14 at 12.02.10.png>)
+    - alpha is serial!! 
     - weak scaling : (scale speedup adding more resources) aim to solve a larger problem in the same amount of time by scaling the problem size proportionally with the number of processors.
     Speedup(N)=α+(1−α)N SpeedUp ->inf 
 
@@ -72,7 +74,9 @@ Top500 list ( lecture 7)
 
 - Different ways of instrumenting 
 (benchmarking) your code.
-
+    - gcc -g  flaf Produces debugging information in the operating system's native format
+    - use high res clc std::chrono::high_resolution_clock
+    - use Craypat
 
 
 ### OpenMP: 
@@ -231,6 +235,34 @@ passing, a “rank” is a process).
     - MPI is well scalable 
     - Omp would be great for MonteCarlo simulation runing a lot of if statemens (smaller, tighter loops or frequent synchronization)
 - MPI code examples: 
+if you need simulaneosly exchange message of same var 
+```
+MPI_Sendrecv(&send_val, 1, MPI_INT, 1, 0, &recv_val, 1, MPI_INT, 1, 0, MPI_COMM_WORLD, &status);
+```
+- Example : **Deadlock MPI**
+```
+// Assume 2 Ranks: Rank 0 and Rank 1
+if (rank == 0) {
+    // Rank 0 tries to receive from Rank 1 first
+    MPI_Recv(buf, count, MPI_INT, 1, tag, MPI_COMM_WORLD, &status); // is blocking receive, will never run
+    MPI_Send(buf, count, MPI_INT, 1, tag, MPI_COMM_WORLD);
+} 
+else if (rank == 1) {
+    // Rank 1 also tries to receive from Rank 0 first
+    MPI_Recv(buf, count, MPI_INT, 0, tag, MPI_COMM_WORLD, &status); 
+    MPI_Send(buf, count, MPI_INT, 0, tag, MPI_COMM_WORLD);
+}
+```
+
+FIX : 
+
+```
+if (rank == 0) {
+    MPI_Send(...); MPI_Recv(...); 
+} else {
+    MPI_Recv(...); MPI_Send(...); 
+}
+```
 
 
 ### Hybrid Computing: 
@@ -255,7 +287,7 @@ passing, a “rank” is a process).
 
 - Memory bandwidth to memory on each.
 - Divergence: how it is handled on the CPU (SIMD) and on the GPU (Warps).
-    - 
+    - #TODO
 - Data alignment: what it is and why is it important.
     - for vectorisation 
 - Latency hiding and Occupancy on GPUs. Latency to start kernels or data transfer. Latency of instruction on the GPU versus the CPU.
@@ -264,57 +296,267 @@ passing, a “rank” is a process).
 ### OpenACC: 
 
 - Directive Based
+    - like openMP
+    - compiled with nvidia sdk nvc++ -O3 -acc 
+    - unlike CUDA, OpenACC is a highlevel directive base hpc framework from nvidia (runs on all videocards tho)
+    - hides latency automatically 
+
+
+
 - Basic GPU operations: allocate, copy, kernel launch.
-- Data management: how OpenACC gets your data to where 
-it needs to be (GPU or CPU) and how you can steer this 
-with a “data” construct.
-- Difference between “kernels” construct and “parallel” 
-construct.
+    - allocate: create/ pcreate (or present_or_create) create(array[n])
+    is a data management clause used to handle memory allocation between the CPU and the GPU.
+    - copyin does allocation as well , no pcreate needed
+    ```
+    #pragma acc data copyin(a,b) copy(c)
+    #pragma acc kernels
+    #pragma acc loop independent
+    for(int i=0; i<n; ++i) {
+        #pragma acc loop independent
+        for(int j=0; j<n; ++j) {
+            #pragma acc loop seq
+            for(int k=0; k<n; ++k) {
+            c[i][j] += a[i][k] * b[k][j];
+            }
+        }
+    }
+    ```
+
+- Data management: how OpenACC gets your data to where it needs to be (GPU or CPU) and how you can steer this with a “data” construct.
+    - #pragma acc data clauses
+    - #pragma acc parallel loop
+
+
+- Difference between “kernels” construct and “parallel” construct.
+    - kernel is hinting to the compiler, compiler may decide to parallelise, parallel is assertion 
+    - #pragma acc kernels {}
+    - #pragma acc parallel {}
+
+
 - Difference between “grid”, “worker” and “vector”.
+    - max 1024 thread per block 
+    - Gang (Highest Level, SM): This corresponds to a Thread Block in CUDA or an SM (Streaming Multiprocessor) on the hardware. Gangs are completely independent; they cannot easily talk to each other and might run in any order.
+
+    - Worker (Middle Level): These are groups of threads within a single gang. Most modern NVIDIA GPUs don't use this level heavily; it’s often skipped in favor of the vector level.
+
+    - Vector (Lowest Level): This corresponds to the CUDA threads or a Warp. These threads work in "lock-step," meaning they all execute the exact same instruction at the same time on different data (SIMD).
+
+    ``` 
+    #pragma acc parallel loop gang
+    for(int i=0; i<n; ++i)
+    #pragma acc loop vector
+    for(int j=0; j<n; ++j)
+    ```
 - Shared versus private variables.
-- Synchronization on the GPU, for example “reduce” clause, 
-or “atomic” or “critical” pragmas. Performance of each.
-- What asynchronous operations do and way you would 
-want to use them.
+    - Scalar and loop index variables are private by default to each thread. VARIABLES INSIDE of Loop are private 
+        - the loop index is private, but other variables might default to shared unless *default(none)* is used.
+    - accessible by all threads within a gang (SM), if use copy are shared by default 
+
+- Synchronization on the GPU, for example “reduce” clause, or “atomic” or “critical” pragmas. Performance of each.
+    - An implicit synchronization happens when leaving a “kernels” or “parallel” region
+
+    ```
+    #pragma acc parallel
+    #pragma acc loop reduction(+:sum) private(x)
+    for (i=0; i < steps; i++) {
+        x = (i+0.5)*step;
+        sum += 4.0 / (1.0+x*x);
+    }
+ 
+    ```
+
+- What asynchronous operations do and way you would want to use them.
+    - By adding the async clause, the CPU launches a kernel or starts a data copy and immediately moves to the next line of code without waiting for the GPU to finish
+    - maximises throughput 
+    ![alt text](<img/Screenshot 2026-01-14 at 09.57.23.png>)
+    - update manually synchronizes a specific "block" of the image from the CPU to the GPU. We use it here instead of copying the whole image at once to save memory and allow for "pipelining".
+    - async(block % 3 + 1)	Overlaps data transfers with kernel execution using multiple streams. 
+
+- Examples: 
+    ```
+    void matrix_multiply(int n, double **a, double **b, double **c) {
+    // 1. DATA MANAGEMENT: Keep data on GPU to avoid the slow CPU-GPU bus
+    // We use pcreate for 'c' if it's just a result buffer, or copy if it has initial values
+    #pragma acc data copyin(a[0:n][0:n], b[0:n][0:n]) copy(c[0:n][0:n])
+    {
+        // 2. KERNEL LAUNCH: Using 'parallel' for explicit control (Programmer-driven)
+        // This allows us to hide the 368-cycle memory latency with enough threads
+        #pragma acc parallel loop gang vector_length(32)
+        for(int i=0; i<n; ++i) {
+            
+            // 3. HIERARCHY: Outer loop is 'gang' (SM level), inner is 'vector' (Warp level)
+            // This ensures we reach high occupancy (ideally 2048 threads per SM)
+            #pragma acc loop vector
+            for(int j=0; j<n; ++j) {
+                
+                double sum = 0.0; // Local variable stays in fast Registers (SRAM)
+                
+                // 4. SEQUENTIAL INNER: The 'k' loop must be 'seq' to avoid race conditions
+                // but 'sum' is stored in a register to hide VRAM access delay
+                #pragma acc loop seq
+                for(int k=0; k<n; ++k) {
+                    sum += a[i][k] * b[k][j];
+                }
+                c[i][j] = sum;
+            }
+        }
+    }
+    ```
 
 ### CUDA: 
 
-- How to compile CUDA code (nvcc).
+- How to compile CUDA code (nvcc). / Basics 
+    - nvcc hello_world.cu
+    - host -cpu , device - gpu
+    - The __global__ keyword means that the “add” function will be run on the device and called from the host
+    ```
+    __global__ void
+    mykernel(void) {
+    }
+    int main(void) {
+        mykernel<<<1,1>>>(); // <<<blocks,threads per block>>>
+        printf("Hello World!\n");
+        return 0;
+    }
+    ```
+    - FLOPS/byte transfered matters: For an A100, this is roughly 150 to 200 FLOPs per 1 byte of memory access
+        - Arithmetic: Takes 6 cycles.
+        Memory Access: Takes 368 cycles.
+
+    - e.g. , returns cuda error code 
+    ```
+    _host__ ​ __device__ ​cudaError_t 	cudaMalloc ( void** devPtr, size_t size ); 
+    ```
+
+
 - What a streaming multiprocessor (SM) is.
+    - 1 computing "core", streaming cause it always computes no matter what to hide latency 
+
 - What is a “grid”, “block”, “warp” and “thread” and how they relate to the SM.
     - Grid: The entire job you send to the GPU (e.g., "Rotate this 4K image").
 
     - Block: The grid is split into blocks. Each block is assigned to a single SM. Threads in the same block can share that fast on-chip SRAM (Shared Memory)
 
-    - Warp (The "Unit of Work"): This is the most important level for performance. A Warp is a group of 32 threads that are executed at the exact same time on the CUDA cores.
+    - Warp (The "Unit of Work"): This is the most important level for performance. A Warp is a group of 32 threads that are *executed at the exact same time* on the CUDA cores. (don't care about them in actual programming , makes sence only for warm divergence )
 
     - SIMT (Single Instruction, Multiple Threads): If one thread in a warp has to do an if statement and the others don't, the whole warp slows down. This is called Warp Divergence.
 
     - Thread: The smallest unit, responsible for calculating a single pixel or a single number.
-- How indexing works. How to turn a thread 
-and block index into a global index.
+
+
+- How **indexing** works. How to turn a thread and block index into a global index.
+    - threadIdx.x: The index of the thread within its current block. If a block has
+    256 threads, this ranges from 0 to 255.
+    - blockIdx.x: The index of the block within the entire grid.
+    - blockDim.x: The size (number of threads) of a single block. This is a constant for all blocks in a kernel launch
+    - gridDim.x: The total number of blocks in the grid.
+    - global_index=(blockIdx.x×blockDim.x)+threadIdx.x
+    - sometime you need to create more : *Ceiling Division*
+    ```
+    int numBlocks = (N + BLOCKSIZE - 1) / BLOCKSIZE;
+    kern_set_val<<<numBlocks, BLOCKSIZE>>>(gpu_ptr, value, N)
+    ```
+
+
+
+- Code Examples: 
+
+```
+int main(void) {
+	int *a, *b, *c;	// host copies of a, b, c
+	int *a_d, *b_d, *c_d;	// device copies of a, b, c
+	int size = N * sizeof(int);
+	
+	// Alloc space for device copies of a, b, c
+	cudaMalloc((void **)&a_d, size);
+	cudaMalloc((void **)&b_d, size);
+	cudaMalloc((void **)&c_d, size);
+
+	// Alloc space for host copies of a, b, c and setup input values
+	a = (int *)malloc(size); random_ints(a, N);
+	b = (int *)malloc(size); random_ints(b, N);
+	c = (int *)malloc(size);
+
+	// Copy inputs to device
+	cudaMemcpy(a_d, a, size, cudaMemcpyHostToDevice);
+	cudaMemcpy(b_d, b, size, cudaMemcpyHostToDevice);
+
+	// Launch add() kernel on GPU, add() is a function defined in global scope earlier 
+	add<<<N,1>>>(a_d, b_d, c_d);
+	
+	// Copy result back to host
+	cudaMemcpy(c, c_d, size, cudaMemcpyDeviceToHost);
+		
+    // Print results
+	for(int i=0; i<N; i++)printf("%d) %d + %d = %d\n",i,a[i],b[i],c[i]);
+        	
+    // Cleanup
+    free(a); free(b); free(c);
+	cudaFree(a_d); cudaFree(b_d); cudaFree(c_d);
+	return 0;
+} 
+```
+
 
 ### Cloud & Containers: 
 
-Difference between Cloud (Virtual Machines) and containers
-- VM: a “virtual” computer. Has memory, CPUs, network, 
-disks, etc.
-- How to handle “persistence” with VMs and containers, e.g., 
-“snapshots”.
-- Ephemeral computing (create a resource, compute, throw 
-away the resource).
-- You are “root” in virtual machines and containers and what 
-this means.
-- Dockerhub: like github but for containers.
+- Difference between Cloud (Virtual Machines) and containers
+    - VM: Full OS, Snapshot = Disk + RAM, Root = Full machine control.
+    - Container: Shared Kernel, Volumes = Persistence, Root = Isolated control.
+    - VM: a “virtual” computer. Has memory, CPUs, network, disks, etc.
+        - emulates hardware of other machine, has drivers of other machine etc 
+        - includes its own Guest Operating System
+        - ontainer: A lightweight package that shares the Host Operating System's kernel. It only contains the application and its specific dependencies, making it much smaller and faster to start than a VM.
+
+- How to handle “persistence” with VMs and containers, e.g., “snapshots”.
+    - "point-in-time" image of a VM's entire state, including the disk and sometimes memory. If a VM crashes, you can roll back to a previous snapshot
+    - Persistence in Containers: Because containers are designed to be temporary, data written inside them is lost when they stop. To keep data, you must use External Volumes or "mount" directories from the host.
+
+- Ephemeral computing (create a resource, compute, throw away the resource).
+    - This is a "cloud-native" strategy where resources are treated as disposable.
+
+    - Concept: You create a resource (VM or Container), perform a specific computation, and immediately throw away the resource.
+
+    - Benefit: This ensures you only pay for the exact seconds of compute time you use and prevents "configuration drift" where old servers become messy over time.
+
+- You are “root” in virtual machines and containers and what this means.
+    - You have total control to install software, change configurations, and manage users.
+    - While you are "root" inside a container, the isolation layers prevent you from being "root" on the physical host machine, protecting the rest of the cloud infrastructure.
+
+
 - How to access data
-- images and snapshots for VMs; mounting host directories 
-for containers.
+    - Data Access in VMs: Usually involves creating a virtual disk image or taking a snapshot to move large amounts of data.
+
+    - Data Access in Containers: Primarily done by mounting host directories. This maps a folder on your physical computer directly into the container so the app can read/write files in real-time.
+
+
+- images and snapshots for VMs; mounting host directories for containers.
+
 
 ### MapReduce: 
 
-- Why the “compute” is sent to the “data” 
-instead of the normal “HPC” way.
-- Data model: write once and read (process) 
-multiple times.
+- Why the “compute” is sent to the “data” instead of the normal “HPC” way.
+    - You move the "compute" (the small code/program) to the nodes where the data already sits.
+    - Sending a few kilobytes of code over a network is much faster and cheaper than moving terabytes of data. This minimizes network congestion and utilizes the local disk I/O of each server.
+    - data distribution, schdulnig done by hadoop with RAID defined by machine, programmer only needs to write once, and then write code in map and reduce manner
+
+- Data model: write once and read (process) multiple times.
+    - Write Once: Data is loaded into the distributed file system in large chunks and is generally immutable (it doesn't change).
+
+    - Read Multiple Times: Different "Map" jobs can then scan this same data multiple times to extract different insights.
+
+    - Benefit: This simplifies "Persistence" and error recovery. If a node fails during a calculation, you don't have to worry about "half-finished" writes; you just restart the task on another node using the original, unchanged data.
+
+
 - What the “map” and “reduce” phases do.
+    - MAP: A chunk of raw data. Action: The "Mapper" function processes the data and outputs a list of intermediate Key-Value pairs. Highly paralelisable task 
+    - Shuffle/Sort (The "Hidden" Phase): The system automatically moves all pairs with the same Key to the same "Reducer" node.
+    - REDUCE Input: All values associated with a specific key (e.g., "apple" -> [1, 1, 1, 1]). Action: The "Reducer" function aggregates these values into a final result (e.g., "apple" -> 4).
+
+
 - What are the “key” and “value”?
+    - Key (k): An identifier used to group data together (e.g., a "Word" in a text file or a "User ID" in a log).
+
+    - Value (v): The data associated with that key (e.g., the number "1" or a timestamp).
+
+    - Example: If you are counting words, a pair would look like ("apple", 1).

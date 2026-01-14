@@ -35,7 +35,7 @@ int main(void) {
 	cudaMemcpy(a_d, a, size, cudaMemcpyHostToDevice);
 	cudaMemcpy(b_d, b, size, cudaMemcpyHostToDevice);
 
-	// Launch add() kernel on GPU
+	// Launch add() kernel on GPU, add() is a function defined in global scope earlier 
 	add<<<N,1>>>(a_d, b_d, c_d);
 	
 	// Copy result back to host
